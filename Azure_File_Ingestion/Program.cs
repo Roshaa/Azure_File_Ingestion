@@ -1,18 +1,27 @@
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(o =>
+{
+    o.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "File API",
+        Version = "v1"
+    });
+});
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-
-    app.UseSwaggerUI(c =>
+    app.UseSwagger();
+    app.UseSwaggerUI(o =>
     {
-        c.SwaggerEndpoint("/openapi/v1.json", "File API v1");
-        c.RoutePrefix = "swagger";
+        o.SwaggerEndpoint("/swagger/v1/swagger.json", "File API v1");
+        o.RoutePrefix = "swagger";
     });
 
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
