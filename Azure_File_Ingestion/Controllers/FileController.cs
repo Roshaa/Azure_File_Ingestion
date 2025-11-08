@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Azure_File_Ingestion.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("file")]
     public class FileController : ControllerBase
     {
         [HttpPost("upload")]
