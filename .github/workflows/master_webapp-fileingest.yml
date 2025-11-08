@@ -1,38 +1,59 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - webapp-fileingest
+name: Build & deploy Web App + APIM
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
     paths:
-      - 'Azure_File_Ingestion/**' 
+      - 'Azure_File_Ingestion/**'
   workflow_dispatch:
+
+env:
+  RG: rg-fileingest
+  APIM: apim-fileingest
+  WEBAPP: webapp-fileingest
+  API_ID: fileapi
+  API_PATH: file
+  SERVICE_URL: https://webapp-fileingest.azurewebsites.net
 
 jobs:
   build:
     runs-on: windows-latest
-    permissions:
-      contents: read
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.x'
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Restore + Build
+        working-directory: Azure_File_Ingestion
+        run: |
+          dotnet restore
+          dotnet build -c Release --no-restore
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      - name: Publish
+        working-directory: Azure_File_Ingestion
+        run: dotnet publish -c Release -o ../../publish --no-build
 
-      - name: Upload artifact for deployment job
+      - name: Upload app artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: webapp
+          path: publish/**
+
+      - name: Install Swagger CLI
+        run: dotnet tool install -g Swashbuckle.AspNetCore.Cli
+
+      - name: Generate openapi.json
+        run: >
+          swagger tofile --output openapi.json
+          "Azure_File_Ingestion/bin/Release/net9.0/Azure_File_Ingestion.dll" v1
+
+      - name: Upload openapi.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: openapi.json
 
   deploy:
     runs-on: windows-latest
@@ -40,28 +61,35 @@ jobs:
     permissions:
       id-token: write
       contents: read
-
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
+      - uses: actions/download-artifact@v4
+        with: { name: webapp }
+
+      - uses: actions/download-artifact@v4
+        with: { name: openapi }
+
+      - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_279A8CE089F147A9B103FE1E6822210C }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_28F1EE6B61A94B0C8C903DD04FD8C363 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F52830FCBAB947DEBA96FB091DD1D865 }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
+      - uses: azure/webapps-deploy@v3
         with:
-          app-name: 'webapp-fileingest'
-          slot-name: 'Production'
+          app-name: ${{ env.WEBAPP }}
+          slot-name: Production
           package: .
 
-          
-
-
+      - name: Import OpenAPI into APIM (new revision)
+        run: |
+          az extension add -n apim --upgrade -y || true
+          REV=${GITHUB_SHA:0:12}
+          az apim api import \
+            -g $RG --service-name $APIM \
+            --api-id $API_ID --path $API_PATH \
+            --service-url "$SERVICE_URL" \
+            --specification-format OpenApi --specification-file ./openapi.json \
+            --api-revision "$REV"
+          az apim api release create \
+            -g $RG --service-name $APIM \
+            --api-id $API_ID --notes "rev $REV"
