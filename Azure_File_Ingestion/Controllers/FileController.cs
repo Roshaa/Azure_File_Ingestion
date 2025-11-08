@@ -18,6 +18,7 @@ namespace Azure_File_Ingestion.Controllers
         [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
         public IActionResult Upload([FromForm] FileUploadDto dto)
         {
+
             return Ok(new { dto.Name, dto.Contact, dto.File.FileName, dto.File.Length });
         }
 
