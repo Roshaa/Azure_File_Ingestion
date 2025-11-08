@@ -5,7 +5,7 @@ namespace Azure_File_Ingestion.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class FileController(IHttpClientFactory httpClientFactory) : ControllerBase
+    public class FileController(IHttpClientFactory _httpClientFactory) : ControllerBase
     {
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
@@ -18,18 +18,25 @@ namespace Azure_File_Ingestion.Controllers
         [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
         public async Task<IActionResult> Upload([FromForm] FileUploadDto dto, CancellationToken ct = default)
         {
-            HttpClient http = httpClientFactory.CreateClient("blobUploadFunction");
+            HttpClient http = _httpClientFactory.CreateClient("blobUploadFunction");
+            HttpResponseMessage response = await http.GetAsync("BlobUpload", ct);
 
-            HttpResponseMessage response = await http.GetAsync("BlobUpload");
+            string requestUri = response.RequestMessage?.RequestUri?.ToString();
+            string body = await response.Content.ReadAsStringAsync(ct);
 
-            var body = await response.Content.ReadAsStringAsync(ct);
-            return StatusCode((int)response.StatusCode, body);
+            return StatusCode((int)response.StatusCode, new
+            {
+                called = requestUri,
+                statusCode = (int)response.StatusCode,
+                status = response.StatusCode.ToString(),
+                body
+            });
         }
 
         [HttpGet]
         public IActionResult Poke()
         {
-            return Ok("Yes i am here v4");
+            return Ok("Yes i am here v5");
         }
 
     }

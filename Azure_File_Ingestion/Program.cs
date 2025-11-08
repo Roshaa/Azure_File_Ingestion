@@ -13,11 +13,13 @@ builder.Services.AddSwaggerGen(o =>
     });
 });
 
-builder.Services.AddHttpClient("blobUploadFunction", (sp, c) =>
+var funcBaseUrl = builder.Configuration["FUNC_BASE_URL"];
+if (string.IsNullOrWhiteSpace(funcBaseUrl))
+    throw new InvalidOperationException("FUNC_BASE_URL not configured");
+
+builder.Services.AddHttpClient("blobUploadFunction", c =>
 {
-    var cfg = sp.GetRequiredService<IConfiguration>();
-    c.BaseAddress = new Uri(cfg["FUNC_BASE_URL"]!);
-    c.Timeout = TimeSpan.FromSeconds(30);
+    c.BaseAddress = new Uri(funcBaseUrl);
 });
 
 var app = builder.Build();
