@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'Azure File Ingestion/**' 
+      - 'Azure_File_Ingestion/**' 
   workflow_dispatch:
 
 jobs:
@@ -63,4 +63,5 @@ jobs:
           package: .
 
           
+
 
