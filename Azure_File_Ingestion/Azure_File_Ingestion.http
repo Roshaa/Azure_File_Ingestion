@@ -1,0 +1,6 @@
+@Azure_File_Ingestion_HostAddress = http://localhost:5081
+
+GET {{Azure_File_Ingestion_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
