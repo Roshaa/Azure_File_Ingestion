@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Azure_File_Ingestion.Controllers
 {
     [ApiController]
-    [Route("file")]
+    [Route("[controller]")]
     public class FileController : ControllerBase
     {
         [HttpPost("upload")]
@@ -18,14 +18,13 @@ namespace Azure_File_Ingestion.Controllers
         [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
         public IActionResult Upload([FromForm] FileUploadDto dto)
         {
-
             return Ok(new { dto.Name, dto.Contact, dto.File.FileName, dto.File.Length });
         }
 
         [HttpGet]
         public IActionResult Poke()
         {
-            return Ok("Yes i am here v2");
+            return Ok("Yes i am here v3");
         }
 
     }
