@@ -63,10 +63,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: webapp }
+        with: { name: webapp, path: webapp }
 
       - uses: actions/download-artifact@v4
-        with: { name: openapi }
+        with: { name: openapi, path: openapi }
 
       - uses: azure/login@v2
         with:
@@ -78,9 +78,9 @@ jobs:
         with:
           app-name: ${{ env.WEBAPP }}
           slot-name: Production
-          package: .
+          package: webapp              # <- not "."
 
-      - name: Import OpenAPI into APIM (new revision)
+      - name: Import OpenAPI into APIM
         run: |
           az extension add -n apim --upgrade -y || true
           REV=${GITHUB_SHA:0:12}
@@ -88,8 +88,8 @@ jobs:
             -g $RG --service-name $APIM \
             --api-id $API_ID --path $API_PATH \
             --service-url "$SERVICE_URL" \
-            --specification-format OpenApi --specification-file ./openapi.json \
+            --specification-format OpenApi \
+            --specification-file ./openapi/openapi.json \
             --api-revision "$REV"
           az apim api release create \
-            -g $RG --service-name $APIM \
-            --api-id $API_ID --notes "rev $REV"
+            -g $RG --service-name $APIM --api-id $API_ID --notes "rev $REV"
