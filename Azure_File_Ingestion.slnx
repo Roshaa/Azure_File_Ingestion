@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Azure_File_Ingestion/Azure_File_Ingestion.csproj" />
+  <Project Path="fileingest-blob-upload/fileingest-blob-upload.csproj" Id="242ee812-519a-455d-83b0-f96eff5e4b3e" />
 </Solution>

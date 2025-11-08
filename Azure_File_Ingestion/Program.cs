@@ -13,6 +13,15 @@ builder.Services.AddSwaggerGen(o =>
     });
 });
 
+
+builder.Services.AddHttpClient("blobUploadFunction", (sp, c) =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    c.BaseAddress = new Uri(cfg["FUNC_BASE_URL"]!);
+    c.Timeout = TimeSpan.FromSeconds(30);
+});
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -28,4 +37,4 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
-app.Run();
+await app.RunAsync();

@@ -5,7 +5,7 @@ namespace Azure_File_Ingestion.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class FileController : ControllerBase
+    public class FileController(IHttpClientFactory httpClientFactory) : ControllerBase
     {
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
@@ -16,9 +16,14 @@ namespace Azure_File_Ingestion.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
         [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
-        public IActionResult Upload([FromForm] FileUploadDto dto)
+        public async Task<IActionResult> Upload([FromForm] FileUploadDto dto, CancellationToken ct = default)
         {
-            return Ok(new { dto.Name, dto.Contact, dto.File.FileName, dto.File.Length });
+            HttpClient http = httpClientFactory.CreateClient("blobUploadFunction");
+
+            HttpResponseMessage response = await http.GetAsync("BlobUpload");
+
+            var body = await response.Content.ReadAsStringAsync(ct);
+            return StatusCode((int)response.StatusCode, body);
         }
 
         [HttpGet]
