@@ -22,19 +22,29 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '9.x' }
 
-      - name: Restore+Build+Publish
+      - name: Restore + Build
         working-directory: Azure_File_Ingestion
         run: |
           dotnet restore
           dotnet build -c Release --no-restore
-          dotnet publish -c Release -o ../../publish --no-build
+
+      - name: Publish to ./publish
+        run: dotnet publish "Azure_File_Ingestion/Azure_File_Ingestion.csproj" -c Release -o publish
+
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish)) { throw "publish folder missing" }
+          Get-ChildItem publish | Select-Object -First 10
 
       - name: Install Swagger CLI
         run: dotnet tool install -g Swashbuckle.AspNetCore.Cli
-      - name: Add dotnet tools to PATH (Windows)
+
+      - name: Add dotnet tools to PATH
         shell: pwsh
         run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
@@ -53,19 +63,20 @@ jobs:
         with:
           app-name: ${{ env.WEBAPP }}
           slot-name: Production
-          package: publish
+          package: ./publish
 
       - name: Import OpenAPI into APIM (new revision)
+        shell: pwsh
         run: |
-          az extension add -n apim --upgrade -y || true
-          REV=${GITHUB_SHA:0:12}
-          az apim api import \
-            -g $RG --service-name $APIM \
-            --api-id $API_ID --path $API_PATH \
-            --service-url "$SERVICE_URL" \
-            --specification-format OpenApi \
-            --specification-file ./openapi.json \
-            --api-revision "$REV"
-          az apim api release create \
-            -g $RG --service-name $APIM --api-id $API_ID --notes "rev $REV"
-
+          az extension add -n apim --upgrade -y
+          $REV = $env:GITHUB_SHA.Substring(0,12)
+          az apim api import `
+            -g $env:RG --service-name $env:APIM `
+            --api-id $env:API_ID --path $env:API_PATH `
+            --service-url $env:SERVICE_URL `
+            --specification-format OpenApi `
+            --specification-file ./openapi.json `
+            --api-revision $REV
+          az apim api release create `
+            -g $env:RG --service-name $env:APIM `
+            --api-id $env:API_ID --notes "rev $REV"
