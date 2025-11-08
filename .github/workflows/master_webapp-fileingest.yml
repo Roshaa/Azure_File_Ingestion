@@ -78,8 +78,8 @@ jobs:
         with:
           app-name: ${{ env.WEBAPP }}
           slot-name: Production
-          package: webapp              # <- not "."
-
+          package: webapp
+          
       - name: Import OpenAPI into APIM
         run: |
           az extension add -n apim --upgrade -y || true
@@ -93,3 +93,4 @@ jobs:
             --api-revision "$REV"
           az apim api release create \
             -g $RG --service-name $APIM --api-id $API_ID --notes "rev $REV"
+
