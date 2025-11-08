@@ -3,8 +3,7 @@ name: Build & deploy Web App + APIM
 on:
   push:
     branches: [ master ]
-    paths:
-      - 'Azure_File_Ingestion/**'
+    paths: [ 'Azure_File_Ingestion/**' ]
   workflow_dispatch:
 
 env:
@@ -16,57 +15,30 @@ env:
   SERVICE_URL: https://webapp-fileingest.azurewebsites.net
 
 jobs:
-  build:
+  build_deploy:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.x'
+        with: { dotnet-version: '9.x' }
 
-      - name: Restore + Build
+      - name: Restore+Build+Publish
         working-directory: Azure_File_Ingestion
         run: |
           dotnet restore
           dotnet build -c Release --no-restore
-
-      - name: Publish
-        working-directory: Azure_File_Ingestion
-        run: dotnet publish -c Release -o ../../publish --no-build
-
-      - name: Upload app artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: webapp
-          path: publish/**
+          dotnet publish -c Release -o ../../publish --no-build
 
       - name: Install Swagger CLI
         run: dotnet tool install -g Swashbuckle.AspNetCore.Cli
+      - name: Add dotnet tools to PATH (Windows)
+        shell: pwsh
+        run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
       - name: Generate openapi.json
         run: >
           swagger tofile --output openapi.json
           "Azure_File_Ingestion/bin/Release/net9.0/Azure_File_Ingestion.dll" v1
-
-      - name: Upload openapi.json
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi
-          path: openapi.json
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/download-artifact@v4
-        with: { name: webapp, path: webapp }
-
-      - uses: actions/download-artifact@v4
-        with: { name: openapi, path: openapi }
 
       - uses: azure/login@v2
         with:
@@ -78,9 +50,9 @@ jobs:
         with:
           app-name: ${{ env.WEBAPP }}
           slot-name: Production
-          package: webapp
-          
-      - name: Import OpenAPI into APIM
+          package: publish
+
+      - name: Import OpenAPI into APIM (new revision)
         run: |
           az extension add -n apim --upgrade -y || true
           REV=${GITHUB_SHA:0:12}
@@ -89,8 +61,7 @@ jobs:
             --api-id $API_ID --path $API_PATH \
             --service-url "$SERVICE_URL" \
             --specification-format OpenApi \
-            --specification-file ./openapi/openapi.json \
+            --specification-file ./openapi.json \
             --api-revision "$REV"
           az apim api release create \
             -g $RG --service-name $APIM --api-id $API_ID --notes "rev $REV"
-
