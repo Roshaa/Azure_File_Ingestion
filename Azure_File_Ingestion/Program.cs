@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http.Features;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -8,17 +6,6 @@ builder.Services.AddSwaggerGen(o =>
 {
     o.SwaggerDoc("v1", new() { Title = "File API", Version = "v1" });
     o.SupportNonNullableReferenceTypes();
-});
-
-builder.Services.Configure<FormOptions>(o =>
-{
-    var max = builder.Configuration.GetValue<long>("FileUpload:MaxBytes", 5_000_000);
-    o.MultipartBodyLengthLimit = max;
-});
-builder.WebHost.ConfigureKestrel(o =>
-{
-    var max = builder.Configuration.GetValue<long>("FileUpload:MaxBytes", 5_000_000);
-    o.Limits.MaxRequestBodySize = max;
 });
 
 var app = builder.Build();
