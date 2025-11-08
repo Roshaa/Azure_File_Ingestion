@@ -70,43 +70,51 @@ jobs:
         shell: pwsh
         run: |
           $REV = $env:GITHUB_SHA.Substring(0,12)
-          $API_REV_ID = "$($env:API_ID);rev=$REV"
+          $RG = $env:RG
+          $APIM = $env:APIM
+          $API_ID = $env:API_ID
+          $API_PATH = $env:API_PATH
+          $SERVICE_URL = $env:SERVICE_URL
 
-          az apim api show `
-            --resource-group $env:RG `
-            --service-name $env:APIM `
-            --api-id $API_REV_ID `
-            --output none 2>$null
+          $api = az apim api show `
+            --resource-group $RG `
+            --service-name $APIM `
+            --api-id $API_ID 2>$null
 
-          if ($LASTEXITCODE -ne 0) {
-            az apim api revision create `
-              --resource-group $env:RG `
-              --service-name $env:APIM `
-              --api-id $env:API_ID `
-              --api-revision $REV `
-              --source-api-id $env:API_ID `
-              --notes "rev $REV"
+          if (-not $?) {
+            az apim api import `
+              --resource-group $RG `
+              --service-name $APIM `
+              --api-id $API_ID `
+              --path $API_PATH `
+              --specification-format OpenApi `
+              --specification-path ./openapi.json `
+              --service-url $SERVICE_URL `
+              --subscription-required true
           }
 
+          az apim api revision create `
+            --resource-group $RG `
+            --service-name $APIM `
+            --api-id $API_ID `
+            --api-revision $REV `
+            --api-revision-description "rev $REV"
+
           az apim api import `
-            --resource-group $env:RG `
-            --service-name $env:APIM `
-            --api-id $API_REV_ID `
+            --resource-group $RG `
+            --service-name $APIM `
+            --api-id $API_ID `
+            --api-revision $REV `
+            --path $API_PATH `
             --specification-format OpenApi `
             --specification-path ./openapi.json `
-            --if-match "*"
-
-          az apim api update `
-            --resource-group $env:RG `
-            --service-name $env:APIM `
-            --api-id $API_REV_ID `
-            --set serviceUrl=$env:SERVICE_URL isCurrent=true `
-            --if-match "*"
+            --service-url $SERVICE_URL `
+            --subscription-required true
 
           az apim api release create `
-            --resource-group $env:RG `
-            --service-name $env:APIM `
-            --api-id $env:API_ID `
-            --release-id $REV `
+            --resource-group $RG `
+            --service-name $APIM `
+            --api-id $API_ID `
             --api-revision $REV `
+            --release-id $REV `
             --notes "rev $REV"
