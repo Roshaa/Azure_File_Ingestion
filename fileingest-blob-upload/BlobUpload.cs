@@ -1,23 +1,19 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
 namespace fileingest_blob_upload;
 
-public class BlobUpload
+public class BlobUpload(ILogger<BlobUpload> _logger)
 {
-    private readonly ILogger<BlobUpload> _logger;
-
-    public BlobUpload(ILogger<BlobUpload> logger)
-    {
-        _logger = logger;
-    }
-
     [Function("BlobUpload")]
-    public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req)
     {
-        _logger.LogInformation("C# HTTP trigger function processed a request.");
-        return new OkObjectResult("Welcome to Azure Functions!");
+        var res = req.CreateResponse(HttpStatusCode.OK);
+
+        await res.WriteStringAsync("TO IMPLEMENT!");
+
+        return res;
     }
 }
