@@ -12,7 +12,7 @@ env:
   WEBAPP: webapp-fileingest
   API_ID: fileapi
   API_PATH: file
-  SERVICE_URL: https://webapp-fileingest.azurewebsites.net
+  SERVICE_URL: https://webapp-fileingest-bjdqctc5cxgpbhgn.westeurope-01.azurewebsites.net
 
 jobs:
   build_deploy:
@@ -68,15 +68,29 @@ jobs:
       - name: Import OpenAPI into APIM (new revision)
         shell: pwsh
         run: |
-          az extension add -n apim --upgrade -y
           $REV = $env:GITHUB_SHA.Substring(0,12)
+      
           az apim api import `
-            -g $env:RG --service-name $env:APIM `
-            --api-id $env:API_ID --path $env:API_PATH `
-            --service-url $env:SERVICE_URL `
-            --specification-format OpenApi `
-            --specification-file ./openapi.json `
-            --api-revision $REV
+          --resource-group $env:RG `
+          --service-name $env:APIM `
+          --api-id $env:API_ID `
+          --display-name "File API" `
+          --path $env:API_PATH `
+          --specification-format OpenApi `
+          --specification-path ./openapi.json `
+          --subscription-required true `
+          --api-revision $REV
+        
+          az apim api update `
+            --resource-group $env:RG `
+            --service-name $env:APIM `
+            --api-id $env:API_ID `
+            --set serviceUrl=$env:SERVICE_URL
+          
           az apim api release create `
-            -g $env:RG --service-name $env:APIM `
-            --api-id $env:API_ID --notes "rev $REV"
+            --resource-group $env:RG `
+            --service-name $env:APIM `
+            --api-id $env:API_ID `
+            --release-id $REV `
+            --api-revision $REV `
+            --notes "rev $REV"
