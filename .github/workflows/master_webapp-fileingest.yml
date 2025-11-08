@@ -17,6 +17,9 @@ env:
 jobs:
   build_deploy:
     runs-on: windows-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -65,3 +68,4 @@ jobs:
             --api-revision "$REV"
           az apim api release create \
             -g $RG --service-name $APIM --api-id $API_ID --notes "rev $REV"
+
