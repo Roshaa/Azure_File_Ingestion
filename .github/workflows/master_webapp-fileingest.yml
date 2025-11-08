@@ -59,18 +59,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Who am I (sanity)
-        shell: pwsh
-        run: |
-          az ad sp show --id $env:AZURE_CLIENT_ID --query "{name:displayName,id:id,type:servicePrincipalType}"
-          az account show --query "{sub:id,tenant:tenantId}"
-
-      - name: Ensure APIM CLI extension
-        shell: pwsh
-        run: |
-          az extension add --name apim --upgrade
-
+          
       - uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.WEBAPP }}
@@ -106,3 +95,4 @@ jobs:
             --release-id $REV `
             --api-revision $REV `
             --notes "rev $REV"
+
