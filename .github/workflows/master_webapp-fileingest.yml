@@ -95,4 +95,3 @@ jobs:
             --release-id $REV `
             --api-revision $REV `
             --notes "rev $REV"
-
