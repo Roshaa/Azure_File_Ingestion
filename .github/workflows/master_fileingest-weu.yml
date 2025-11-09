@@ -1,53 +1,46 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy dotnet core project to Azure Function App - fileingest-weu
+name: Deploy Functions (fileingest-blob-upload)
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
+    paths:
+      - 'fileingest-blob-upload/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
-  DOTNET_VERSION: '9.0.x' # set this to the dotnet version to use
+  PROJECT_DIR: fileingest-blob-upload
+  DOTNET_VERSION: '9.x'
+  FUNC_APP: fileingest-weu
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
-      - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
-        uses: actions/setup-dotnet@v1
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: 'Resolve Project Dependencies Using Dotnet'
-        shell: bash
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build --configuration Release --output ./output
-          popd
-      
-      - name: Login to Azure
+      - name: Publish Functions
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet publish -c Release -o ./publish
+
+      - name: Azure login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4D35A320BB2B4FBC9792DFA256FE50C3 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F7B193AB70A34AC7829E2D1C934C2577 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EB3D2875F9E14C67895F5D21F4D50599 }}
 
-      - name: 'Run Azure Functions Action'
+      - name: Deploy to Function App
         uses: Azure/functions-action@v1
-        id: fa
         with:
-          app-name: 'fileingest-weu'
-          slot-name: 'Production'
-          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-          
+          app-name: ${{ env.FUNC_APP }}
+          slot-name: Production
+          package: ${{ env.PROJECT_DIR }}/publish
