@@ -11,13 +11,26 @@ builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
-string accountUrl = builder.Configuration["BLOB_ACCOUNT_URL"];
-BlobServiceClient blobServiceClient = new BlobServiceClient(new Uri(accountUrl!), new DefaultAzureCredential());
 
-BlobContainerClient container = blobServiceClient.GetBlobContainerClient("uploads");
+string accountUrl = builder.Configuration["BLOB_ACCOUNT_URL"]
+    ?? throw new InvalidOperationException("BLOB_ACCOUNT_URL not configured.");
 
-await container.CreateIfNotExistsAsync();
+BlobContainerClient containerClient = new BlobContainerClient(
+    new Uri($"{accountUrl}/uploads"),
+    new DefaultAzureCredential());
 
-builder.Services.AddSingleton(container);
+await containerClient.CreateIfNotExistsAsync();
+
+builder.Services.AddSingleton(containerClient);
+
+
+//string cosmosConn = builder.Configuration["COSMOS_CONNECTION_STRING"];
+//string cosmosDb = builder.Configuration["COSMOS_DB_NAME"];
+//string cosmosContainerName = builder.Configuration["COSMOS_CONTAINER_NAME"];
+
+//CosmosClient cosmosClient = new CosmosClient(cosmosConn);
+
+//builder.Services.AddSingleton(cosmosClient.GetContainer(cosmosDb!, cosmosContainerName!));
+
 
 builder.Build().Run();

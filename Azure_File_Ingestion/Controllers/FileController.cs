@@ -1,5 +1,6 @@
 using Azure_File_Ingestion.Dto;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using System.Net.Http.Headers;
 
 namespace Azure_File_Ingestion.Controllers
@@ -40,6 +41,9 @@ namespace Azure_File_Ingestion.Controllers
             HttpResponseMessage resp = await http.PostAsync($"BlobUpload?code={_functionCode}", content, ct);
 
             string body = await resp.Content.ReadAsStringAsync(ct);
+
+            if (resp.StatusCode == HttpStatusCode.BadRequest)
+                return BadRequest(body);
 
             if ((int)resp.StatusCode == 500)
                 return StatusCode(500, "Unexpected server error");
