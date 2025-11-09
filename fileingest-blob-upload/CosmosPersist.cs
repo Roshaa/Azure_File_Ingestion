@@ -14,7 +14,7 @@ public class CosmosPersist
 
     [Function("CosmosPersist")]
     public async Task Run(
-        [BlobTrigger("uploads/{name}", Connection = "BLOB_CONNECTION_STRING")]
+        [BlobTrigger("uploads/{name}",Source = BlobTriggerSource.EventGrid, Connection = "BLOB_CONNECTION_STRING")]
         Stream stream,
         string name,
         FunctionContext context)
