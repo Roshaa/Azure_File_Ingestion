@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -5,7 +6,7 @@ using System.Net;
 
 namespace fileingest_blob_upload;
 
-public class BlobUpload(ILogger<BlobUpload> _logger)
+public class BlobUpload(ILogger<BlobUpload> _logger, BlobContainerClient container)
 {
     [Function("BlobUpload")]
     public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
@@ -19,9 +20,15 @@ public class BlobUpload(ILogger<BlobUpload> _logger)
             return badRequest;
         }
 
-        //TODO SAVE TO BLOB STORAGE
+        var blob = container.GetBlobClient(filename);
+
+        await blob.UploadAsync(req.Body, overwrite: false);
+
         var response = req.CreateResponse(HttpStatusCode.OK);
+
         await response.WriteStringAsync($"OK, file received: {filename} ");
+
         return response;
     }
+
 }
