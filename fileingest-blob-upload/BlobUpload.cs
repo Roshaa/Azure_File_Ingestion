@@ -8,12 +8,20 @@ namespace fileingest_blob_upload;
 public class BlobUpload(ILogger<BlobUpload> _logger)
 {
     [Function("BlobUpload")]
-    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req)
+    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
     {
-        var res = req.CreateResponse(HttpStatusCode.OK);
+        string filename = req.Headers.GetValues("x-file-name").FirstOrDefault() ?? "unnamed";
 
-        await res.WriteStringAsync("TO IMPLEMENT!");
+        if (string.IsNullOrEmpty(filename))
+        {
+            var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+            await badRequest.WriteStringAsync("Missing x-file-name header");
+            return badRequest;
+        }
 
-        return res;
+        //TODO SAVE TO BLOB STORAGE
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        await response.WriteStringAsync($"OK, file received: {filename} ");
+        return response;
     }
 }

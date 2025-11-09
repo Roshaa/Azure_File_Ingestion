@@ -1,5 +1,6 @@
 using Azure_File_Ingestion.Dto;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Headers;
 
 namespace Azure_File_Ingestion.Controllers
 {
@@ -24,18 +25,21 @@ namespace Azure_File_Ingestion.Controllers
         public async Task<IActionResult> Upload([FromForm] FileUploadDto dto, CancellationToken ct = default)
         {
             HttpClient http = _httpClientFactory.CreateClient("blobUploadFunction");
-            HttpResponseMessage response = await http.GetAsync($"BlobUpload?code={_functionCode}", ct);
 
-            string requestUri = response.RequestMessage?.RequestUri?.ToString();
-            string body = await response.Content.ReadAsStringAsync(ct);
+            await using var s = dto.File.OpenReadStream();
 
-            return StatusCode((int)response.StatusCode, new
-            {
-                called = requestUri,
-                statusCode = (int)response.StatusCode,
-                status = response.StatusCode.ToString(),
-                body
-            });
+            using var content = new StreamContent(s);
+
+            content.Headers.ContentType = new MediaTypeHeaderValue(dto.File.ContentType ?? "application/octet-stream");
+            content.Headers.ContentLength = dto.File.Length;
+            content.Headers.Add("x-file-name", dto.File.FileName);
+
+            HttpResponseMessage resp = await http.PostAsync($"BlobUpload?code={_functionCode}", content, ct);
+
+            string body = await resp.Content.ReadAsStringAsync(ct);
+
+            return StatusCode((int)resp.StatusCode, new { status = resp.StatusCode.ToString(), body });
+
         }
 
         [HttpGet]
