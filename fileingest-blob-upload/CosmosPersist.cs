@@ -19,6 +19,7 @@ public class CosmosPersist
         string name,
         FunctionContext context)
     {
+
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
 

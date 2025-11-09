@@ -13,6 +13,7 @@ public class BlobUpload(BlobContainerClient container, ILogger<BlobUpload> _logg
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
     {
+
         _logger.LogInformation("Processing blob upload request");
 
         if (!req.Headers.TryGetValues("x-file-name", out var values))
