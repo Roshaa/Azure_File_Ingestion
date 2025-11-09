@@ -27,7 +27,6 @@ namespace fileingest_blob_upload
 
             props.Metadata.TryGetValue("originalFileName", out var originalFileName);
             props.Metadata.TryGetValue("contact", out var contact);
-            if (string.IsNullOrWhiteSpace(contact)) throw new InvalidOperationException("contact metadata is required");
 
             var item = new IngestedFile
             {

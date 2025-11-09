@@ -1,0 +1,66 @@
+<policies>
+	<inbound>
+		<base />
+		<rate-limit-by-key calls="5" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress ?? "anon=""")" />
+		<limit-concurrency max-count="5" key="@(context.Subscription?.Key ?? context.Request.IpAddress ?? "anon=""")" />
+		<cors allow-credentials="true">
+			<allowed-origins>
+				<origin>https://api.portal.azure.com</origin>
+				<origin>https://apim.developer.azure-api.net</origin>
+			</allowed-origins>
+			<allowed-methods preflight-result-max-age="300">
+				<method>POST</method>
+				<method>OPTIONS</method>
+			</allowed-methods>
+			<allowed-headers>
+				<header>Ocp-Apim-Subscription-Key</header>
+				<header>Content-Type</header>
+				<header>Accept</header>
+				<header>Authorization</header>
+			</allowed-headers>
+			<expose-headers>
+				<header>x-correlation-id</header>
+				<header>request-id</header>
+			</expose-headers>
+		</cors>
+		<choose>
+			<when condition="@{
+                var ct = context.Request.Headers.GetValueOrDefault("Content-Type=""
+                return !ct.StartsWith("multipart=""/form-data", System.StringComparison.OrdinalIgnoreCase); }">
+			<return-response>
+				<set-status code="415" reason="Unsupported Media Type" />
+				<set-body>Content-Type must be multipart/form-data.</set-body>
+			</return-response>
+			</when>
+		</choose>
+		<set-variable name="reqLen" value="@{
+        var s = context.Request.Headers.GetValueOrDefault("Content-Length=""", "");
+        long parsed;
+        return long.TryParse(s, out parsed) ? (long?)parsed : null;
+        }" />
+		<choose>
+			<when condition="@((context.Variables.GetValueOrDefault"
+				<long?>
+					("reqLen") ?? 0) > 5000000)">
+					<return-response>
+						<set-status code="413" reason="Payload Too Large" />
+						<set-header name="Retry-After" exists-action="override">
+							<value>60</value>
+						</set-header>
+						<set-body>Max 5 MB.</set-body>
+					</return-response>
+				</when>
+		</choose>
+	</inbound>
+	<backend>
+		<base />
+	</backend>
+	<outbound>
+		<base />
+		<set-header name="Server" exists-action="delete" />
+		<set-header name="X-Powered-By" exists-action="delete" />
+	</outbound>
+	<on-error>
+		<base />
+	</on-error>
+</policies>

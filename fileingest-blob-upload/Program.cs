@@ -37,7 +37,6 @@ builder.Services.AddSingleton(containerClient);
 /// Cosmos DB setup
 ///////////////////////
 
-
 string cosmosConn = builder.Configuration["COSMOS_CONNECTION_STRING"]!;
 string dbName = builder.Configuration["COSMOS_DB_NAME"] ?? "fileingest";
 string container = builder.Configuration["COSMOS_CONTAINER_NAME"] ?? "uploads";

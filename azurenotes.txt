@@ -1,0 +1,40 @@
+Every infra on azure was manually configured.
+Cheapest tier possible because i wasnt born rich
+
+Roles were configured manually using least privilege.
+
+The app service traffic is closed, only APIM has access.
+
+App service is deployed via CI/CD and uses open api to update the APIM
+
+APIM auto creates a new revision everytime the api is updated.
+
+Policies are in the APIMpolicies file
+
+Created a product and a subscription
+
+Api was tested via postman
+
+Create Azure App functions with flex comsunption, so it has cold starts, i used to save money.
+
+Azure functions runs via code, i used an env var for this
+
+For local development, auzre core tools were installed and the func was ran locally
+
+Created storage account for the files, blob container
+
+Create another function inside the same function app with blob trigger that will save to cosmos
+
+There was debugs using app insights logs
+
+After some hours i noticed flex comsunption does not trigger a blobtrigger
+
+It is a better solution to use queue storage
+
+Created storage queue with event grid
+
+Adjusted azure function and it works correctly.
+
+Created cosmosdb account
+
+The triggered function is now saving in the account
