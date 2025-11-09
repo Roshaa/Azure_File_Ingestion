@@ -3,10 +3,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Azure_File_Ingestion.Controllers
 {
+
     [ApiController]
     [Route("[controller]")]
-    public class FileController(IHttpClientFactory _httpClientFactory) : ControllerBase
+    public class FileController(IHttpClientFactory _httpClientFactory, IConfiguration _configuration) : ControllerBase
     {
+        private readonly string _functionCode =
+            _configuration["BLOBUPLOAD_FUNCTION_CODE"]
+            ?? throw new InvalidOperationException("BLOBUPLOAD_FUNCTION_CODE missing");
+
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(5_000_000)]
@@ -19,7 +24,7 @@ namespace Azure_File_Ingestion.Controllers
         public async Task<IActionResult> Upload([FromForm] FileUploadDto dto, CancellationToken ct = default)
         {
             HttpClient http = _httpClientFactory.CreateClient("blobUploadFunction");
-            HttpResponseMessage response = await http.GetAsync("BlobUpload", ct);
+            HttpResponseMessage response = await http.GetAsync($"BlobUpload?code={_functionCode}", ct);
 
             string requestUri = response.RequestMessage?.RequestUri?.ToString();
             string body = await response.Content.ReadAsStringAsync(ct);
@@ -34,10 +39,7 @@ namespace Azure_File_Ingestion.Controllers
         }
 
         [HttpGet]
-        public IActionResult Poke()
-        {
-            return Ok("Yes i am here v5");
-        }
+        public IActionResult Poke() => Ok("Yes i am here v5");
 
     }
 }
