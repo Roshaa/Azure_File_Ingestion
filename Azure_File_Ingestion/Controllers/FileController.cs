@@ -56,7 +56,7 @@ namespace Azure_File_Ingestion.Controllers
         }
 
         [HttpGet]
-        public IActionResult Poke() => Ok("Yes i am here v5");
+        public IActionResult Poke() => Ok("Yes i am here v6");
 
     }
 }

@@ -20,7 +20,6 @@ BlobContainerClient containerClient = new BlobContainerClient(
     new DefaultAzureCredential());
 
 await containerClient.CreateIfNotExistsAsync();
-
 builder.Services.AddSingleton(containerClient);
 
 
