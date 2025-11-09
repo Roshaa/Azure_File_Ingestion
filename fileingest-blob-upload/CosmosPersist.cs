@@ -26,5 +26,6 @@ public class CosmosPersist
             "Blob trigger processed blob {Name}, size {Size} bytes",
             name,
             content.Length);
+
     }
 }
