@@ -25,9 +25,6 @@ namespace Azure_File_Ingestion.Controllers
         [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
         public async Task<IActionResult> Upload([FromForm] FileUploadDto dto, CancellationToken ct = default)
         {
-            //////////////////////////////////////////////////////
-            //File ingest function
-
             HttpClient http = _httpClientFactory.CreateClient("blobUploadFunction");
 
             await using var s = dto.File.OpenReadStream();
@@ -37,6 +34,7 @@ namespace Azure_File_Ingestion.Controllers
             content.Headers.ContentType = new MediaTypeHeaderValue(dto.File.ContentType ?? "application/octet-stream");
             content.Headers.ContentLength = dto.File.Length;
             content.Headers.Add("x-file-name", dto.File.FileName);
+            content.Headers.Add("x-contact", dto.Contact);
 
             HttpResponseMessage resp = await http.PostAsync($"BlobUpload?code={_functionCode}", content, ct);
 
@@ -48,11 +46,7 @@ namespace Azure_File_Ingestion.Controllers
             if ((int)resp.StatusCode == 500)
                 return StatusCode(500, "Unexpected server error");
 
-            //////////////////////////////////////////////////////
-
-
             return StatusCode((int)resp.StatusCode, new { status = resp.StatusCode.ToString(), body });
-
         }
 
         [HttpGet]

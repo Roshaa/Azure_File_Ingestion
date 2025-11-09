@@ -23,13 +23,15 @@ public class BlobUpload(BlobContainerClient container, ILogger<BlobUpload> _logg
             return bad;
         }
 
-        string originalFileName = values.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(originalFileName))
+        if (!req.Headers.TryGetValues("x-contact", out var contactValues))
         {
             var bad = req.CreateResponse(HttpStatusCode.BadRequest);
-            await bad.WriteStringAsync("Invalid file name");
+            await bad.WriteStringAsync("Missing x-contact header");
             return bad;
         }
+
+        string originalFileName = values.FirstOrDefault();
+        string contact = contactValues.FirstOrDefault();
 
         _logger.LogInformation("Validations ok, Uploading file {FileName}", originalFileName);
 
@@ -42,7 +44,8 @@ public class BlobUpload(BlobContainerClient container, ILogger<BlobUpload> _logg
         {
             Metadata = new Dictionary<string, string>
             {
-                { "originalFileName", originalFileName }
+                { "originalFileName", originalFileName },
+                {"contact", contact }
             }
         };
 
