@@ -76,46 +76,46 @@ Goal: model a realistic Azure ingestion pipeline, not a demo controller.
   - App Service for Web API
   - Azure Functions (flex/consumption) for functions
 
+---
+
 flowchart LR
     subgraph ClientSide["Client"]
-        U[Consumer / Internal App]
+        U["Consumer / Internal App"]
     end
 
     subgraph Edge["API Exposure"]
-        A[Azure API Management<br/>(Policies, Subscription, Validation)]
+        A["Azure API Management\n(Policies, Subscription, Validation)"]
     end
 
     subgraph AppTier["App Service"]
-        W[Web API<br/>(ASP.NET on App Service)]
+        W["Web API (ASP.NET Core)"]
     end
 
     subgraph IngestFunc["Upload Function App"]
-        F1[BlobUpload Function<br/>(HTTP Trigger)]
+        F1["BlobUpload Function\n(HTTP Trigger)"]
     end
 
     subgraph Storage["Storage Account"]
-        B[(Blob Container<br/>uploads/)]
-        Q[[Queue<br/>blob-events]]
+        B["Blob Container: uploads/"]
+        Q["Queue: blob-events"]
     end
 
     subgraph ProcessFunc["Processor Function App"]
-        F2[CosmosPersist Function<br/>(Queue Trigger)]
+        F2["CosmosPersist Function\n(Queue Trigger)"]
     end
 
     subgraph Data["Cosmos DB"]
-        C[(Database: fileingest<br/>Container: uploads)]
+        C["DB: fileingest\nContainer: uploads\nPK: /contact"]
     end
 
     U --> A
     A --> W
     W --> F1
-    F1 -->|HTTP upload + metadata<br/>(fileName, contact)| B
-    B ==> |Event Grid / integration| Q
+    F1 -->|"Upload PDF + metadata\n(fileName, contact)"| B
+    B -->|"Event Grid / binding\ncreates queue message"| Q
     Q --> F2
-    F2 -->|Upsert metadata docs| C
+    F2 -->|"Upsert IngestedFile"| C
 
-
----
 
 ## APIM configuration
 
