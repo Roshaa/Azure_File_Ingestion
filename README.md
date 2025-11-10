@@ -82,43 +82,13 @@ Goal: model a realistic Azure ingestion pipeline, not a demo controller.
 
 ```mermaid
 flowchart LR
-    subgraph ClientSide["Client"]
-        U["Consumer / Internal App"]
-    end
-
-    subgraph Edge["API Exposure"]
-        A["Azure API Management\n(Policies, Subscription, Validation)"]
-    end
-
-    subgraph AppTier["App Service"]
-        W["Web API (ASP.NET Core)"]
-    end
-
-    subgraph IngestFunc["Upload Function App"]
-        F1["BlobUpload Function\n(HTTP Trigger)"]
-    end
-
-    subgraph Storage["Storage Account"]
-        B["Blob Container: uploads/"]
-        Q["Queue: blob-events"]
-    end
-
-    subgraph ProcessFunc["Processor Function App"]
-        F2["CosmosPersist Function\n(Queue Trigger)"]
-    end
-
-    subgraph Data["Cosmos DB"]
-        C["DB: fileingest\nContainer: uploads\nPK: /contact"]
-    end
-
-    U --> A
-    A --> W
-    W --> F1
-    F1 -->|"Upload PDF + metadata\n(fileName, contact)"| B
-    B -->|"Event Grid / binding\ncreates queue message"| Q
-    Q --> F2
-    F2 -->|"Upsert IngestedFile"| C
-
+    Client["Client"] --> APIM["API Management"]
+    APIM --> App["Web API (App Service)"]
+    App --> FuncUpload["BlobUpload (Function)"]
+    FuncUpload --> Blob["Blob Storage"]
+    Blob --> Queue["Storage Queue"]
+    Queue --> FuncCosmos["CosmosPersist (Function)"]
+    FuncCosmos --> Cosmos["Cosmos DB"]
 ```
 
 ## APIM configuration
