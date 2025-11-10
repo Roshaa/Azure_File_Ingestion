@@ -23,9 +23,7 @@ End-to-end flow:
 3. `BlobUpload`:
    - Validates headers
    - Uploads PDF into `uploads` container
-   - Sets metadata:
-     - `originalFileName`
-     - `contact`
+   - Sets metadata
 4. Blob events are sent into `blob-events` queue.
 5. `CosmosPersist` Function (queue trigger):
    - Reads queue message
@@ -69,7 +67,7 @@ Goal: model a realistic Azure ingestion pipeline, not a demo controller.
     - Partition key: `/contact`
     - Model: `IngestedFile`
 
-- Front door:
+- API Management:
   - Azure API Management in front of the Web API
   - Product + subscription key
   - Policies from `APIMpolicies.txt`
@@ -95,135 +93,11 @@ Client
 
 Policies stored as code in `APIMpolicies.txt`.
 
-Key behaviors:
-
-- Rate limit per subscription/IP:
-  - `5` calls per `60` seconds
-- Concurrency limit:
-  - Max `5` in-flight per key
-- CORS:
-  - Restricted allowed origins
-- Request validation:
-  - Only `multipart/form-data`
-  - Block wrong `Content-Type` with `415`
-  - Enforce `Content-Length` ≤ 5 MB
-  - Return `413` and `Retry-After` for oversized uploads
-- Security hardening:
-  - Removes `Server` and `X-Powered-By` headers
-- APIM sits in front of the App Service
-- App Service inbound locked so only APIM can call it
-
 APIM is updated via CI/CD using the OpenAPI definition from the API. Each deploy creates a new API revision.
-
----
-
-## Implementation details
-
-### API (`Azure_File_Ingestion`)
-
-- `FileController`
-  - `POST /File/upload`
-  - Validates:
-    - Required file
-    - Max 5 MB
-    - Only PDF
-    - Valid `Name`
-    - Valid `Contact` (phone format)
-  - Uses `IHttpClientFactory` to call `BlobUpload` Function
-  - Sends:
-    - Body as stream
-    - `x-file-name`
-    - `x-contact`
-    - Function key via query (`BLOBUPLOAD_FUNCTION_CODE`)
-
-### Functions (`fileingest-blob-upload`)
-
-- `Program.cs`
-  - Registers:
-    - `BlobServiceClient` using `DefaultAzureCredential` and `BLOB_ACCOUNT_URL`
-    - `BlobContainerClient` for `uploads` and creates if not exists
-    - `CosmosClient`
-    - Cosmos database and container if not exists
-
-- `BlobUpload`
-  - HTTP trigger
-  - Reads headers
-  - Writes blob with metadata
-  - Returns:
-    - `blobName`
-    - `originalFileName`
-
-- `CosmosPersist`
-  - Queue trigger: `blob-events`
-  - Parses event payload
-  - Reads blob properties
-  - Builds `IngestedFile`
-  - Upserts into Cosmos with `PartitionKey(contact)`
-  - Logs saved item
-
-- `IngestedFile`
-  - `id`
-  - `originalFileName`
-  - `blobName`
-  - `created`
-  - `size`
-  - `type`
-  - `contact`
-
----
-
-## Configuration
-
-All secrets and connection details via environment variables / App Settings.
-
-**API**
-
-- `FUNC_BASE_URL`
-- `BLOBUPLOAD_FUNCTION_CODE`
-
-**Functions**
-
-- `BLOB_ACCOUNT_URL`
-- `BLOB_CONNECTION_STRING` (for queue trigger binding)
-- `COSMOS_CONNECTION_STRING`
-- `COSMOS_DB_NAME` (optional)
-- `COSMOS_CONTAINER_NAME` (optional)
-
-Example local settings and appsettings are included in code comments/docs, not with real secrets.
-
----
 
 ## CI/CD
 
 Workflows live under `.github/workflows`.
-
-Behavior:
-
-- On push to main:
-  - Restore
-  - Build
-  - (Hook for tests)
-  - Deploy Web API to App Service
-  - Deploy Azure Functions to Function App
-- Uses:
-  - `azure/login` with OIDC
-  - Azure deploy actions
-- APIM is updated using the API OpenAPI spec so revisions stay in sync.
-
----
-
-## Observability
-
-- Application Insights configured for Functions.
-- Logs include:
-  - Incoming upload requests
-  - Blob upload events
-  - Cosmos writes
-- Used during development to:
-  - Debug trigger behavior
-  - Validate end-to-end pipeline
-
----
 
 ## Infra notes
 
@@ -240,20 +114,9 @@ Behavior:
   - Queue/Event Grid wiring for `blob-events`
 - Cosmos:
   - Account + DB + container created and wired
+ 
+For more info see `azurenotes.txt`.
+
 
 Infra has been deleted to avoid costs.
 Evidence and configuration snapshots are stored under `azure project prints` and referenced by `prints.md`.
-
----
-
-## Why this project exists
-
-- Practice real-world Azure patterns on a small, focused scenario.
-- Demonstrate:
-  - APIM as a gateway
-  - Functions as compute boundary
-  - Blob + Queue + Cosmos integration
-  - CI/CD to App Service and Functions
-  - Policies-as-code and documented infra
-
-This is a backend-focused, cloud-native ingestion flow suitable as portfolio proof.
