@@ -76,16 +76,44 @@ Goal: model a realistic Azure ingestion pipeline, not a demo controller.
   - App Service for Web API
   - Azure Functions (flex/consumption) for functions
 
-**Text diagram**
+flowchart LR
+    subgraph ClientSide["Client"]
+        U[Consumer / Internal App]
+    end
 
-Client  
-→ APIM (policies, subscription, validation)  
-→ Web API (App Service)  
-→ BlobUpload Function (HTTP)  
-→ Blob `uploads/` (metadata: file + contact)  
-→ Queue `blob-events`  
-→ CosmosPersist Function (queue trigger)  
-→ Cosmos DB `fileingest/uploads`
+    subgraph Edge["API Exposure"]
+        A[Azure API Management<br/>(Policies, Subscription, Validation)]
+    end
+
+    subgraph AppTier["App Service"]
+        W[Web API<br/>(ASP.NET on App Service)]
+    end
+
+    subgraph IngestFunc["Upload Function App"]
+        F1[BlobUpload Function<br/>(HTTP Trigger)]
+    end
+
+    subgraph Storage["Storage Account"]
+        B[(Blob Container<br/>uploads/)]
+        Q[[Queue<br/>blob-events]]
+    end
+
+    subgraph ProcessFunc["Processor Function App"]
+        F2[CosmosPersist Function<br/>(Queue Trigger)]
+    end
+
+    subgraph Data["Cosmos DB"]
+        C[(Database: fileingest<br/>Container: uploads)]
+    end
+
+    U --> A
+    A --> W
+    W --> F1
+    F1 -->|HTTP upload + metadata<br/>(fileName, contact)| B
+    B ==> |Event Grid / integration| Q
+    Q --> F2
+    F2 -->|Upsert metadata docs| C
+
 
 ---
 
