@@ -121,4 +121,4 @@ For more info see `azurenotes.txt`.
 
 
 Infra has been deleted to avoid costs.
-Evidence and configuration snapshots are stored under `azure project prints` and referenced by `prints.md`.
+Evidence and configuration snapshots are stored under `azure project prints`.
