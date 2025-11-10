@@ -78,6 +78,9 @@ Goal: model a realistic Azure ingestion pipeline, not a demo controller.
 
 ---
 
+### Flow diagram
+
+```mermaid
 flowchart LR
     subgraph ClientSide["Client"]
         U["Consumer / Internal App"]
@@ -116,6 +119,7 @@ flowchart LR
     Q --> F2
     F2 -->|"Upsert IngestedFile"| C
 
+```
 
 ## APIM configuration
 
