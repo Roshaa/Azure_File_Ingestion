@@ -122,3 +122,4 @@ For more info see `azurenotes.txt`.
 
 Infra has been deleted to avoid costs.
 Evidence and configuration snapshots are stored under `azure project prints`.
+Now i know why iac is important...
